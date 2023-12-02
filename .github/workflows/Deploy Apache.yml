@@ -1,0 +1,66 @@
+name: Deploy & Update - Apache Workflow
+
+on:
+  push:
+    branches:
+      - development
+      - homol
+      - master
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Github environment 
+        uses: actions/checkout@v4
+
+      - name: Development Environment SSH & Update
+        if: github.ref == 'refs/heads/development'
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.SSH_HOSTDEV }}
+          username: ${{ secrets.SSH_USERNAMEDEV }}
+          password: ${{ secrets.SSH_PASSWDEV }}
+          port: ${{ secrets.SSH_PORTDEV }}
+          script: |
+           export NVM_DIR=~/.nvm
+           source ~/.nvm/nvm.sh
+           cd ~/apis/simon-api
+           git pull
+           npm install
+           npm run build
+           pm2 restart simon-api --update-env
+            
+      - name: Homologation Environment SSH & Update
+        if: github.ref == 'refs/heads/homol'
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.SSH_HOSTHOMOL }}
+          username: ${{ secrets.SSH_USERNAMEHOMOL }}
+          password: ${{ secrets.SSH_PASSWHOMOL }}
+          port: ${{ secrets.SSH_PORTHOMOL }}
+          script: |
+           export NVM_DIR=~/.nvm
+           source ~/.nvm/nvm.sh
+           cd ~/apis/simon-api
+           git pull
+           npm install
+           npm run build
+           pm2 restart simon-api --update-env
+   
+      - name: Production Environment SSH & Update
+        if: github.ref == 'refs/heads/master'
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.SSH_HOSTMAIN }}
+          username: ${{ secrets.SSH_USERNAMEMAIN }}
+          password: ${{ secrets.SSH_PASSWMAIN }}
+          port: ${{ secrets.SSH_PORTMAIN }}
+          script: |
+            export NVM_DIR=~/.nvm
+            source ~/.nvm/nvm.sh
+            cd ~/apis/simon-api
+            git pull
+            npm install
+            npm run build
+            pm2 restart simon-api --update-env  

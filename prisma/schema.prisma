@@ -1,0 +1,287 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model user {
+  id                  String                @id @default(uuid())
+  name                String
+  email               String                @unique
+  password            String
+  document            String
+  active              Boolean               @default(true)
+  is_admin            Boolean               @default(false)
+  phone               String?
+  created_at          DateTime              @default(now())
+  updated_at          DateTime?             @updatedAt
+  first_access        Boolean               @default(true)
+  permission          permission_enum?      @default(read)
+  organization        organization_type?
+  client_account_plan client_account_plan[]
+  contract_logs       contract_logs[]
+
+  @@map("users")
+}
+
+model integration {
+  id                  String                @id @default(uuid())
+  name                String
+  email               String                @unique @default("")
+  active              Boolean               @default(true)
+  auto_approved       Boolean               @default(false)
+  created_at          DateTime              @default(now())
+  updated_at          DateTime?             @updatedAt
+  credentials         String?
+  document            String?
+  full_access         Boolean               @default(false)
+  key                 String?
+  origin              String?
+  client              client[]
+  integration_log     integration_log[]
+  integration_service integration_service[]
+
+  @@map("integrations")
+}
+
+model integration_log {
+  id             String      @id @default(uuid())
+  integration_id String
+  due_date       DateTime
+  created_at     DateTime    @default(now())
+  updated_at     DateTime?   @updatedAt
+  details        String?
+  integration    integration @relation(fields: [integration_id], references: [id])
+
+  @@map("integration_logs")
+}
+
+model service {
+  id         String    @id @default(uuid())
+  name       String
+  key        String
+  active     Boolean   @default(true)
+  standard   Boolean   @default(false)
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+  label      String?
+  display    Boolean   @default(true)
+
+  @@map("services")
+}
+
+model client {
+  id                        String                @id @default(uuid())
+  integration_id            String
+  economic_group_id         String?
+  service_client_id         String?
+  baas_id                   String?
+  name                      String
+  email                     String?
+  document                  String
+  type                      String?
+  subject                   String?
+  nature                    String?
+  exempt_state_registration Boolean?
+  state_registration        String?
+  street                    String?
+  number                    String?
+  complement                String?
+  zip                       String?
+  neighborhood              String?
+  city                      String?
+  state                     String?
+  country                   String?
+  establishment_id          String?
+  opening_date              DateTime?
+  monthly_invoicing         Decimal?              @default(0) @db.Decimal(12, 2)
+  phone                     String?
+  gender                    String?
+  motherName                String?
+  birthDate                 DateTime?
+  nationality               String?
+  nationalityState          String?
+  profession                String?
+  income_value              Decimal?
+  created_at                DateTime              @default(now())
+  updated_at                DateTime?             @updatedAt
+  approved_date             DateTime?
+  clientAccounts            client_account[]
+  client_account_plan       client_account_plan[]
+  clientOperators           client_operator[]
+  clientPartners            client_partner[]
+  economicGroup             economic_group?       @relation(fields: [economic_group_id], references: [id])
+  integration               integration           @relation(fields: [integration_id], references: [id])
+  serviceClient             service_client?       @relation(fields: [service_client_id], references: [id])
+
+  @@map("clients")
+}
+
+model service_client {
+  id           String    @id @default(uuid())
+  client_id    String
+  modules_keys String[]
+  created_at   DateTime  @default(now())
+  updated_at   DateTime? @updatedAt
+  clients      client[]
+
+  @@map("service_clients")
+}
+
+model client_partner {
+  id            String       @id @default(uuid())
+  client_id     String
+  name          String
+  document      String
+  document_type partner_type
+  birthday_date DateTime?
+  phone         String?
+  street        String?
+  number        String?
+  complement    String?
+  zip           String?
+  neighborhood  String?
+  city          String?
+  state         String?
+  country       String?
+  created_at    DateTime     @default(now())
+  updated_at    DateTime?    @updatedAt
+  client        client       @relation(fields: [client_id], references: [id])
+
+  @@map("client_partners")
+}
+
+model client_operator {
+  id         String    @id @default(uuid())
+  client_id  String
+  document   String
+  name       String
+  email      String
+  blocked    Boolean
+  permission String
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+  client     client    @relation(fields: [client_id], references: [id])
+
+  @@map("client_operators")
+}
+
+model client_account {
+  id              String    @id @default(uuid())
+  client_id       String
+  baas_account_id String
+  account_number  String
+  account_type    String
+  bank_number     String
+  branch_digit    String?
+  branch_number   String
+  created_at      DateTime  @default(now())
+  updated_at      DateTime? @updatedAt
+  client          client    @relation(fields: [client_id], references: [id])
+
+  @@map("client_accounts")
+}
+
+model economic_group {
+  id                   String                   @id @default(uuid())
+  name                 String
+  active               Boolean
+  note                 String?
+  created_at           DateTime                 @default(now())
+  updated_at           DateTime?                @updatedAt
+  clients              client[]
+  economicGroupContact economic_group_contact[]
+
+  @@map("economic_groups")
+}
+
+model economic_group_contact {
+  id                String         @id @default(uuid())
+  name              String
+  position          String
+  primary_phone     String
+  secondary_phone   String?
+  email             String
+  note              String?
+  economic_group_id String
+  created_at        DateTime       @default(now())
+  updated_at        DateTime?      @updatedAt
+  economicGroup     economic_group @relation(fields: [economic_group_id], references: [id])
+
+  @@map("economic_groups_contacts")
+}
+
+model client_account_plan {
+  id              String    @id @default(uuid())
+  client_id       String
+  baas_plan_id    String
+  user_id         String
+  name            String
+  description     String
+  monthly_payment Decimal   @default(0) @db.Decimal(12, 2)
+  created_at      DateTime  @default(now())
+  updated_at      DateTime? @updatedAt
+  client          client    @relation(fields: [client_id], references: [id])
+  user            user      @relation(fields: [user_id], references: [id])
+
+  @@map("client_accounts_plans")
+}
+
+model integration_service {
+  id             String      @id @default(uuid())
+  integration_id String
+  service_ids    String[]
+  created_at     DateTime    @default(now())
+  updated_at     DateTime?   @updatedAt
+  integration    integration @relation(fields: [integration_id], references: [id])
+}
+
+enum partner_type {
+  cnpj
+  cpf
+}
+
+enum permission_enum {
+  admin
+  manager
+  read
+  backoffice
+}
+
+enum organization_type {
+  flowbanco
+  flowinvest
+  securitizadora
+}
+
+model contract {
+  id              String          @id @default(uuid())
+  title           String
+  description     String?
+  filename        String
+  path            String?
+  version         Int
+  use_spreadsheet Boolean         @default(true)
+  created_at      DateTime        @default(now())
+  updated_at      DateTime?       @updatedAt
+  contract_logs   contract_logs[]
+
+  @@map("contracts")
+}
+
+model contract_logs {
+  id          String    @id @default(uuid())
+  contract_id String
+  user_id     String
+  user        user      @relation(fields: [user_id], references: [id])
+  contract    contract  @relation(fields: [contract_id], references: [id])
+  details     String
+  filename    String?
+  created_at  DateTime  @default(now())
+  updated_at  DateTime? @updatedAt
+
+  @@map("contract_logs")
+}
